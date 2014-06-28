@@ -1,0 +1,10 @@
+Hi [shortname],
+
+This is a kind reminder that you are scheduled for the following duties:
+
+[duties]
+
+These duties will occur within the next [hours] hours.
+
+Best regards,
+[from]
