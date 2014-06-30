@@ -21,7 +21,7 @@ class Duty(object):
 TIMECOLS = {  "7:00AM"  : Duty([1], "Breakfast", "Prep.", "7:00 AM"),
               "8:00AM"  : Duty([2], "Breakfast", "Clean-Up", "8:00 AM"),
               "11:30AM" : Duty([3], "Lunch", "Prep.", "11:30 AM"),
-              "12:30AM" : Duty([4,5], "Lunch", "Clean-Up", "12:30 AM"),
+              "12:30PM" : Duty([4,5], "Lunch", "Clean-Up", "12:30 PM"),
               "5:00PM"  : Duty([6], "Dinner", "Prep.", "5:00 PM"),
               "6:00PM"  : Duty([7,8], "Dinner", "Clean-Up", "6:00 PM")
 }

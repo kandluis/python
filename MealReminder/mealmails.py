@@ -3,6 +3,7 @@
 import pdb
 import datetime
 import csv
+import sys
 from os import path
 
 from includes.objects import Student, Group, MailServer
@@ -15,7 +16,7 @@ SUBJECT = "Meal Shift Reminder"
 SMTP_SERVER = 'smtp.fas.harvard.edu'
 
 # directory where data files are stored
-DATA_DIR = path.join(path.dirname(path.realpath(__file__)),"data")
+DATA_DIR = path.join(path.dirname(path.realpath(sys.argv[0])),"data")
 
 def loadStudentInfo(filePath,group):
   '''
@@ -110,3 +111,6 @@ def main():
 
 if __name__ == '__main__':
   main()
+
+  # wait for user input
+  input("Press Enter To Exit")
