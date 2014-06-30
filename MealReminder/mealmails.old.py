@@ -10,6 +10,11 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import datetime
 
+from includes.objects import Student, Group, Duty, MailServer
+
+# address of server to connect to
+SMTP_SERVER = 'smtp.fas.harvard.edu'
+
 # regex for email checks
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
@@ -22,8 +27,11 @@ ERR_TOL = 0.50 # value from 1 to 2, with 1 requiring perfect match, and 2 not co
 # contants for the date,row tuple we use
 DATE = 0
 ROW = 1
+
 # constants as defaults
 FROM = "REU Meal Shift System"
+SUBJECT = "Meal Shift Reminder"
+FROM = "Friends in F House"
 
 class Duty(object):
   def __init__(self,rows,meal,mtype, timeString):
@@ -81,36 +89,6 @@ def prompt(default,message):
   '''
   inp = input(message)
   return (inp if inp != '' else default)
-
-def sendemail(message,To,From,Subject):
-  '''
-  Function send a message. A connection to @sever is assumed. 
-  params:
-  @message - the message to be sent, in string format
-  @To - the email address the message should be sent to
-  @From - the email address from which the message is sent@
-  @Subject - the subject of the message
-  '''
-  msg = MIMEText(message)
-
-  # set metadata details
-  msg['Subject'] = Subject
-  msg['From'] = From
-  msg['To'] = To
-
-  # send the message view SMTP server
-  server.send_message(msg)
-
-def createMessage(name, duties, template):
-  '''
-  Returns the template with the appropriate name and duties inserted
-  '''
-  # construct string of duties
-  dStr = ""
-  for date,duty in duties:
-    dStr += duty.time + " on " + date + ": " + duty.meal + " " + duty.type + "\n\n"
-
-  return(template.replace('[shortname]', name).replace("[duties]", dStr))
 
 def editDistance(s,t):
   '''
@@ -186,6 +164,47 @@ def loadStudentInfo(fileName,group):
       return group
     else:
       return None
+
+class MailServer(object):
+  '''
+  A mail server is basically a connection to the server specified by URL which 
+  allows us to send and create messages
+  '''
+  def __init__(self, url):
+    self.server = smtplib.SMTP(url)
+
+  def sendemail(self, message,To,From,Subject):
+    '''
+    Function send a message. A connection to @sever is assumed. 
+    params:
+    @message - the message to be sent, in string format
+    @To - the email address the message should be sent to
+    @From - the email address from which the message is sent@
+    @Subject - the subject of the message
+    '''
+    msg = MIMEText(message)
+
+    # set metadata details
+    msg['Subject'] = Subject
+    msg['From'] = From
+    msg['To'] = To
+
+    # send the message view SMTP server
+    self.server.send_message(msg)
+
+  def createMessage(self,name, duties, template):
+    '''
+    Returns the template with the appropriate name and duties inserted
+    '''
+    # construct string of duties
+    dStr = ""
+    for date,duty in duties:
+      dStr += duty.time + " on " + date + ": " + duty.meal + " " + duty.type + "\n\n"
+
+    return(template.replace('[shortname]', name).replace("[duties]", dStr))
+
+  def quit(self):
+    self.server.quit()
 
 class Student(object):
   '''
@@ -311,7 +330,7 @@ class Group(object):
         E_hr, E_mm = EARLIEST_TIME
         date = datetime.datetime(year=time.year, month=int(month), day=int(day),
                                  hour=E_hr, minute=E_mm)
-        return(date < (time + timeRange))
+        return(time < date < (time + timeRange))
       
       # if string is not splittable or if dateStr is not a string with a split attribute
       except (ValueError,AttributeError) as e:
@@ -332,12 +351,16 @@ class Group(object):
       are
       The functions returns the text values of the cells inside rows that are within the 
       time range. It is assumed that rows contains each row, organized from earlier to later
-      dates. The function returns a dictionary of name: (date,duty) list.
+      dates. The function returns a dictionary of name: (date,duty) list. Any empty 
+      cells are ignored and note included in the dictionary.
       '''
+      def accept(val):
+        return (val != '')
+      
       def add(d,k,v):
         if k in d:
           d[k].append(v)
-        else:
+        elif accept(k):
           d[k] = [v]
 
       # get limits
@@ -347,10 +370,12 @@ class Group(object):
 
       # create the dictionary to hold 
       matchings = {}
+
       if len(rows) == 1:
         for (i,duty) in checkTime(limBelow, limAbove):
-          add((matchings,rows[0][ROW][i], (rows[0][DATE],duty)))
-      else:
+          add(matchings,rows[0][ROW][i], (rows[0][DATE],duty))
+      # multiple
+      elif len(rows) > 1:
         # first row
         for (i,duty) in checkTime(limBelow, LATEST_TIME):
           add(matchings,rows[0][ROW][i], (rows[0][DATE], duty))
@@ -361,26 +386,26 @@ class Group(object):
 
         # everything in between
         allDuties = checkTime(EARLIEST_TIME,LATEST_TIME)
-        for rowI in range(1,len(rows)-1):
+        for rowI in range(1,len(rows)-1):    
           for (i,duty) in checkTime(EARLIEST_TIME,LATEST_TIME):
             add(matchings,rows[rowI][ROW][i], (rows[rowI][DATE], duty))
-        
-        return(matchings)
+          
+      return(matchings)
 
     # read correct sheet
     workbook = xlrd.open_workbook(self.extFile)
     signs = workbook.sheet_by_name(self.extSheet)
-    
+
     # collect the row indexes and values to look at by analyzing first column
     rowIndVal = checkDates(signs)
     rowColl = [(val, signs.row_values(i)) for (i,val) in rowIndVal]
 
     # grab names and duty from the excel spredsheet, and return them
-    return([readNamesDuties(rowColl)])
+    return(readNamesDuties(rowColl))
 
-def main:
+def main():
   '''
-  Runs the main program
+  Runs the main program to automatically read in files and set out the information.
   '''
   # defaults
   dFrom, dmailFile, dtimeFile = "sknapp@fas.harvard.edu", "REU Student Emails.csv","Meal Shifts 2014.xlsx"
@@ -400,11 +425,11 @@ def main:
   (From, mailFile, timeFile, tHours, timeSheet, emailTemp) = (prompt(dFrom,mFrom),
                                                               prompt(dmailFile,mmailFile),
                                                               prompt(dtimeFile,mtimeFile),
-                                                              prompt(dHours, mHours),
+                                                              int(prompt(dHours, mHours)),
                                                               prompt(dtimeName, mtimeName),
                                                               prompt(demailTemp, memailTemp))
 
-  pdb.set_trace()
+  # pdb.set_trace()
   # read emails into classes
   REUGroup = loadStudentInfo(mailFile, Group(eFile=timeFile, eSheet=timeSheet))
 
@@ -413,21 +438,32 @@ def main:
                                            timeRange=datetime.timedelta(hours=tHours))
 
   #open connection to mailServer
-  server = smtplib.SMTP('fas.harvard.edu')
+  try:
+    server = MailServer(SMTP_SERVER)
 
-  # create email and send out for each person
-  template = open(emailTemp).read()
-  template = template.replace("[from]", SYSTEM).replace("[hours]",tHours)
-  for (name, duties) in dutySet.items():
-    # get required info
-    msg = createMessage(name,duties, template)
-    email = REUGroup.members[REUGroup.fullName(name)].email
+    # create email and send out for each person
+    template = open(emailTemp).read()
+    template = template.replace("[from]", FROM).replace("[hours]",str(tHours))
+    for (name, duties) in dutySet.items():
+      # get required information and check for existense of member
+      if REUGroup.isMember(name):
+        fullName = REUGroup.fullName(name)
+        email = REUGroup.members[fullName].email
+        msg = server.createMessage(name,duties, template)
+  
+        # send it out
+        server.sendemail(msg,email, From, SUBJECT)
 
-    # send it out
-    sendemail(email,From, msg,"Meal Shift Reminder")
+        # tell the user
+        print("Sent email to {}({}) for {} upcoming shifts.".format(name, email, len(duties)))
+      else:
+        print("Error. Attempted to send email to {}({}), but they are not in the group.".format(
+              name,fullName))
+        print(duties)
 
-  # close connection
-  server.quit()
+  finally:
+    # close connection
+    server.quit()
 
 if __name__ == '__main__':
   main()
