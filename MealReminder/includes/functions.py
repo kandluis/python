@@ -96,12 +96,12 @@ def minIndex(lst):
 def numWords(s):
   return(len(s.split(" ")))
 
-def cleanName(name): 
+def cleanName(name, upper=True): 
   '''
   Removes all non-characters from name
   '''
-  # remove extraneous symbols and lowercase
-  cName = re.sub(r'\W+( \W+)*$', '', name).upper()
+  # remove extraneous symbols and upper
+  cName = re.sub(r'\W+( \W+)*$', '', name).upper() if upper else re.sub(r'\W+( \W+)*$', '', name)
 
   # some names have an extra space at the end
   try:

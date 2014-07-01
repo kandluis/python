@@ -186,7 +186,9 @@ class Group(object):
           E_hr, E_mm = EARLIEST_TIME
           date = datetime.datetime(year=time.year, month=int(month), day=int(day),
                                    hour=E_hr, minute=E_mm)
-          return(time < date < (time + timeRange))
+          initDate = datetime.datetime(year=time.year, month=time.month, day=time.day,
+                                       hour=E_hr, minute=E_mm) - datetime.timedelta(days=1)
+          return(initDate < date < (time + timeRange))
         else:
           return False
       
@@ -215,11 +217,14 @@ class Group(object):
       def accept(val):
         return (val != '')
       
-      def add(d,k,v):
-        if k in d:
-          d[k].append(v)
-        elif accept(k):
-          d[k] = [v]
+      def add(d,cell,v):
+        # try to split the cell input so we can handle multiple names
+        nameList = [cleanName(name, upper=False) for name in cell.split("  ") if accept(x)]
+        for name in nameList:
+          if name in d:
+            d[name].append(v)
+          else:
+            d[name] = [v]
 
       def isWorkDay(dayStr):
         '''
@@ -240,7 +245,7 @@ class Group(object):
       # get limits
       lim = time + timeRange
       limBelow = (time.hour, time.minute)
-      limAbove = (lim.hour, lim.minute)
+      limAbove = (lim.hour, lim.minute) if lim.hour > time.hour else LATEST_TIME 
 
       # create the dictionary to hold 
       matchings = {}

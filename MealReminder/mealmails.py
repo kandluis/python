@@ -76,7 +76,7 @@ def main():
   #pdb.set_trace()
   # read emails into classes
   REUGroup = loadStudentInfo(mailPath, Group(eFile=timePath, eSheet=timeSheet))
-
+  #pdb.set_trace()
   # read student times within the written range
   dutySet = REUGroup.upcomingMembersDuties(time=datetime.datetime.now(), 
                                            timeRange=datetime.timedelta(hours=tHours))
@@ -113,4 +113,4 @@ if __name__ == '__main__':
   main()
 
   # wait for user input
-  input("Press Enter To Exit")
+  input("\n\nPress Enter to exit!\n\n")
