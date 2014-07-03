@@ -101,8 +101,8 @@ def main():
         # tell the user
         print("Sent email to {}({}) for {} upcoming shift(s).".format(name, email, len(duties)))
       else:
-        print("Error. Attempted to send email to {}({}), but they are not in the group.".format(
-              name,fullName))
+        print("Error. Attempted to send email to {}, but they are not in the group.".format(
+              name))
         print(duties)
 
   finally:

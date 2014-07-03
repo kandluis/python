@@ -49,3 +49,7 @@ docs/_build/
 *.xlsx
 *.csv
 *.tar.gz
+
+# ignore executables and apps
+*.exe
+*.app

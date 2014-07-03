@@ -215,11 +215,11 @@ class Group(object):
       cells are ignored and note included in the dictionary.
       '''
       def accept(val):
-        return (val != '')
+        return (cleanName(val,upper=False) != '')
       
       def add(d,cell,v):
         # try to split the cell input so we can handle multiple names
-        nameList = [cleanName(name, upper=False) for name in cell.split("  ") if accept(x)]
+        nameList = [cleanName(name, upper=False) for name in cell.split("  ") if accept(name)]
         for name in nameList:
           if name in d:
             d[name].append(v)
@@ -245,13 +245,14 @@ class Group(object):
       # get limits
       lim = time + timeRange
       limBelow = (time.hour, time.minute)
-      limAbove = (lim.hour, lim.minute) if lim.hour > time.hour else LATEST_TIME 
+      limAbove = (lim.hour, lim.minute) 
+      limAboveToday = limAbove if (lim.day == time.day) else LATEST_TIME 
 
       # create the dictionary to hold 
       matchings = {}
 
       if len(rows) == 1:
-        for (i,duty) in checkTime(limBelow, limAbove):
+        for (i,duty) in checkTime(limBelow, limAboveToday):
           add(matchings,rows[0][ROW][i], (rows[0][DATE],duty))
       # multiple
       elif len(rows) > 1:

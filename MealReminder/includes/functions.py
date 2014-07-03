@@ -100,13 +100,20 @@ def cleanName(name, upper=True):
   '''
   Removes all non-characters from name
   '''
+  def removeExtraSpace(sname):
+    try:
+      if sname[-1] == " ":
+        return(removeExtraSpace(sname[0:len(sname)-1]))
+      elif sname[0] == " ":
+        return(removeExtraSpace(sname[1:len(sname)]))
+      else:
+        return(sname)
+
+    except IndexError:
+      return(sname)
+
   # remove extraneous symbols and upper
   cName = re.sub(r'\W+( \W+)*$', '', name).upper() if upper else re.sub(r'\W+( \W+)*$', '', name)
 
-  # some names have an extra space at the end
-  try:
-    if cName[-1] == " ":
-      return(cName[0:len(cName)-1])
-    return(cName)
-  except IndexError:
-    return(cName)
+  # remove extra spaces at the beginning and end
+  return(removeExtraSpace(name))
