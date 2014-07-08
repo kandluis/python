@@ -241,24 +241,35 @@ class Group(object):
         except (ValueError, AttributeError) as e:
           return False
 
+      def matchDayToN(n,dayStr):
+        try:
+          if DATE_REGEX.match(str(dayStr)):
+            month, day = dayStr.split("/")
+            return (n == int(day))
+          else:
+            return False
+        except (ValueError, AttributeError) as e:
+          return False
+
+      # no rows
+      if len(rows) < 1:
+        return {}
 
       # get limits
       lim = time + timeRange
-      limBelow = (time.hour, time.minute)
-      limAbove = (lim.hour, lim.minute) 
-      limAboveToday = limAbove if (lim.day == time.day) else LATEST_TIME 
+      limBelow = (time.hour, time.minute) if matchDayToN(time.day,rows[0][DATE]) else EARLIEST_TIME
+      limAbove = (lim.hour, lim.minute) if matchDayToN(lim.day,rows[-1][DATE]) else LATEST_TIME
 
       # create the dictionary to hold 
       matchings = {}
 
+      # first row (limit further if today is a work day)
       if len(rows) == 1:
-        for (i,duty) in checkTime(limBelow, limAboveToday):
+        for (i,duty) in checkTime(limBelow, limAbove):
           add(matchings,rows[0][ROW][i], (rows[0][DATE],duty))
       # multiple
       elif len(rows) > 1:
-        # first row (limit further if today is a work day)
-        firstDay = limBelow if isWorkDay(rows[0][DATE]) else EARLIEST_TIME
-        for (i,duty) in checkTime(firstDay, LATEST_TIME):
+        for (i,duty) in checkTime(limBelow, LATEST_TIME):
           add(matchings,rows[0][ROW][i], (rows[0][DATE], duty))
 
         # last row
