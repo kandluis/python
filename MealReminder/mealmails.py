@@ -48,10 +48,11 @@ def main():
   Runs the main program to automatically read in files and set out the information.
   '''
   # defaults
-  dFrom, dmailFile, dtimeFile = "sknapp@fas.harvard.edu", "REU Student Emails.csv","Meal Shifts 2014.xlsx"
+  dFrom, dmailFile, dtimeFile = "REUMeals@meals.harvard.edu", "REU Student Emails.csv","Meal Shifts 2014.xlsx"
   dHours = 12
   dtimeName = "Signs"
   demailTemp = "template.txt"
+  hemailTemp = "template.html"
 
   # messages
   mFrom = "From email? ({}): ".format(dFrom)
@@ -59,19 +60,22 @@ def main():
   mtimeFile =  "Time Sheet File ({}): ".format(dtimeFile)
   mtimeName = "Time Sheet Name ({}): ".format(dtimeName)
   mHours = "Warn within how many hours? ({}): ".format(dHours)
-  memailTemp = "Email template? ({})".format(demailTemp)
+  memailTemp = "Text Email template? ({})".format(demailTemp)
+  hmemailTemp = "HTML Email template? ({})".format(hemailTemp)
 
   # prompt for modifications
-  (From, mailFile, timeFile, tHours, timeSheet, emailTemp) = (prompt(dFrom,mFrom),
+  (From, mailFile, timeFile, tHours, timeSheet, emailTemp, htmlTemp) = (prompt(dFrom,mFrom),
                                                               prompt(dmailFile,mmailFile),
                                                               prompt(dtimeFile,mtimeFile),
                                                               int(prompt(dHours, mHours)),
                                                               prompt(dtimeName, mtimeName),
-                                                              prompt(demailTemp, memailTemp))
+                                                              prompt(demailTemp, memailTemp),
+                                                              prompt(hemailTemp, hmemailTemp))
 
   # construct paths to files
-  mailPath, emailPath, timePath = (path.join(DATA_DIR, mailFile),
+  mailPath, emailPath, htmlPath, timePath = (path.join(DATA_DIR, mailFile),
                                                   path.join(DATA_DIR, emailTemp),
+                                                  path.join(DATA_DIR, htmlTemp),
                                                   path.join(DATA_DIR, timeFile)) 
   #pdb.set_trace()
   # read emails into classes
@@ -85,18 +89,20 @@ def main():
   server = MailServer(SMTP_SERVER)
   try:
     # create email and send out for each person
-    template = open(emailPath).read()
-    template = template.replace("[from]", FROM).replace("[hours]",str(tHours))
-    #pdb.set_trace()
+    templates = {}
+    templates['text'] = open(emailPath).read().replace("[from]", FROM).replace("[hours]",str(tHours))
+    templates['html'] = open(htmlPath).read().replace("[from]", FROM).replace("[hours]",str(tHours))
+
+    # pdb.set_trace()
     for (name, duties) in dutySet.items():
       # get required information and check for existense of member
       if REUGroup.isMember(name):
         fullName = REUGroup.fullName(name)
         email = REUGroup.members[fullName].email
-        msg = server.createMessage(name,duties, template)
-  
+        content = server.createMessageContent(name,duties, templates)
+        #pdb.set_trace()
         # send it out
-        server.sendemail(msg,email, From, SUBJECT)
+        server.sendemail(content, email, From, SUBJECT)
 
         # tell the user
         print("Sent email to {}({}) for {} upcoming shift(s).".format(name, email, len(duties)))

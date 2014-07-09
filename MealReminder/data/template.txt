@@ -4,7 +4,11 @@ This is a kind reminder that you are scheduled for the following duties:
 
 [duties]
 
-These duties will occur within the next [hours] hours.
+This email was automatically generated and includes meals for the next [hours] hours.
 
-Best regards,
+Best Regards,
 [from]
+
+For technical inqueries, contact luisperez@college.harvard.edu. Meal Shift questions should be directed to sknapp@fas.harvard.edu.
+
+Copyright 2014 by Luis Perez.

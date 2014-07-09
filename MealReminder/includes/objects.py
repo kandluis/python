@@ -2,7 +2,8 @@ import smtplib
 import re
 import xlrd
 import datetime
-from email.mime.text import MIMEText
+from email.mime.text import MIMEText 
+from email.mime.multipart import MIMEMultipart
 from includes.functions import *
 
 # regex for email checks
@@ -37,7 +38,12 @@ class MailServer(object):
     @From - the email address from which the message is sent@
     @Subject - the subject of the message
     '''
-    msg = MIMEText(message)
+    # create holder for email
+    msg = MIMEMultipart('alternative')
+
+    # extract text and html versions from message dictionary
+    msg.attach(MIMEText(message['text'],'plain'))
+    msg.attach(MIMEText(message['html'], 'html'))
 
     # set metadata details
     msg['Subject'] = Subject
@@ -47,18 +53,56 @@ class MailServer(object):
     # send the message view SMTP server
     self.server.send_message(msg)
 
-  def createMessage(self,name, duties, template):
+  def formDutyString(self,date,duty):
     '''
-    Returns the template with the appropriate name and duties inserted
+    Given a data and a duty object, creates the text information string to insert 
+    into the templates. 
+    '''
+    txt = "On " + date + " at " + duty.time + ": " + duty.meal + " " + duty.type
+    return(txt)
+
+  def formStringMessage(self,name, duties, template, html = False):
+    '''
+    Returns the template with the appropriate name and duties inserted. For more info,
+    see createMessage. Only difference is in template, which is a string of the text
+    template, and the return value, which is also a string of the email content.
+    If html is true, the generated duty list is an html list.
     '''
     # construct string of duties
-    dStr = ""
+    dStr = "<ul>" if html else ""
     for date,duty in duties:
-      dStr += "On " + date + " at " + duty.time + ": " + duty.meal + " " + duty.type + "\n\n"
+      dStr += "<li>" if html else ""
+      dStr += self.formDutyString(date,duty)
+      dStr += "</li>" if html else "\n\n"
+
+    dStr += "</ul>" if html else ""
 
     return(template.replace('[shortname]', name).replace("[duties]", dStr))
 
+  def createMessageContent(self,name,duties,templates):
+    '''
+    Creates a message dictionary containing all parts of the message. So for example,
+    msg['html'] contains the html version of the message while msg['text'] the text version
+    params:
+    @name - the short name of the person to whom the message is being sent
+    @duties - the list of (data,duty) pairs from which to create a list of upcoming duties
+    @template - a dictionary of templates from which to create the mail messages. Keys indexes
+                this dictionary will match up with keys in the returned message.
+
+    return - a dictionary as specified above. Note that a COPY of template is made.
+    '''
+    # make a new dictionary object
+    msg = {}
+
+    for key in templates:
+      msg[key] = self.formStringMessage(name,duties,templates[key],key=="html")
+
+    return(msg)
+
   def quit(self):
+    '''
+    Shuts down the email server
+    '''
     self.server.quit()
 
 class Student(object):
