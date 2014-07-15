@@ -105,7 +105,7 @@ def main():
         server.sendemail(content, email, From, SUBJECT)
 
         # tell the user
-        print("Sent email to {}({}) for {} upcoming shift(s).".format(name, email, len(duties)))
+        print("Sent email to {} ({}) for {} upcoming shift(s).".format(name, email, len(duties)))
       else:
         print("Error. Attempted to send email to {}, but they are not in the group.".format(
               name))
